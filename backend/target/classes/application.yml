@@ -1,0 +1,67 @@
+server:
+  port: 8092
+
+spring:
+  profiles:
+    active: sqlite
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    exclude:
+      - org.apache.shiro.spring.boot.autoconfigure.ShiroBeanAutoConfiguration
+      - org.apache.shiro.spring.boot.autoconfigure.ShiroAutoConfiguration
+      - org.apache.shiro.spring.boot.autoconfigure.ShiroAnnotationProcessorAutoConfiguration
+      - org.apache.shiro.spring.config.web.autoconfigure.ShiroWebAutoConfiguration
+      - org.apache.shiro.spring.config.web.autoconfigure.ShiroWebFilterConfiguration
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 1
+      max-active: 5
+      validation-query: SELECT 1
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.simpledrone.domain
+  configuration:
+    map-underscore-to-camel-case: true
+
+app:
+  database:
+    type: sqlite
+  security:
+    username: admin
+    password: admin123
+    api-token: simple-drone-token
+
+---
+spring:
+  profiles: sqlite
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:./data/simple-drone.db
+    username:
+    password:
+    druid:
+      driver-class-name: org.sqlite.JDBC
+      url: jdbc:sqlite:./data/simple-drone.db
+app:
+  database:
+    type: sqlite
+
+---
+spring:
+  profiles: mysql
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/simple_drone?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: root
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/simple_drone?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+      username: root
+      password: root
+app:
+  database:
+    type: mysql

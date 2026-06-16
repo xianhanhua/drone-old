@@ -1,0 +1,127 @@
+body {
+  margin: 0;
+  background: #eef2f6;
+  color: #1f2933;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+.page {
+  padding: 24px;
+}
+
+.login-card {
+  width: min(420px, calc(100% - 32px));
+  margin: 12vh auto 0;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+}
+
+h1 {
+  margin: 0 0 18px;
+  font-size: 24px;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #52606d;
+}
+
+.topbar,
+.toolbar,
+.table-box,
+.editor {
+  background: #fff;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.topbar span {
+  color: #64748b;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbar input {
+  flex: 1;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+}
+
+.table-box {
+  overflow: auto;
+}
+
+.table {
+  min-width: 860px;
+  margin-bottom: 0;
+}
+
+td small {
+  display: block;
+  color: #758392;
+}
+
+.empty {
+  text-align: center;
+  color: #758392;
+}
+
+.editor {
+  padding: 18px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.message {
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.message.error {
+  background: #fff1f0;
+  color: #a61b1b;
+}
+
+.message.success {
+  background: #edf9f0;
+  color: #1f7a3b;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .toolbar {
+    flex-direction: column;
+  }
+}

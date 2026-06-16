@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>简化版无人机系统</title>
+  <style>
+    body { margin: 0; background: #eef2f6; color: #1f2933; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    .page { padding: 24px; }
+    .card, .bar, .table-box, .editor { background: #fff; border: 1px solid #d8dee7; border-radius: 8px; }
+    .login { width: min(420px, calc(100% - 32px)); margin: 12vh auto 0; padding: 28px; }
+    h1 { margin: 0 0 18px; font-size: 24px; }
+    h2 { margin: 0 0 14px; font-size: 18px; }
+    label { display: block; margin-bottom: 12px; color: #52606d; font-weight: 700; }
+    input, select, textarea { width: 100%; min-height: 38px; margin-top: 6px; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font: inherit; }
+    button { min-height: 38px; padding: 7px 13px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 700; cursor: pointer; }
+    .primary { color: #fff; background: #1f6feb; border-color: #1f6feb; }
+    .danger { color: #b42318; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; margin-bottom: 16px; }
+    .bar { display: flex; gap: 10px; padding: 12px; margin-bottom: 16px; }
+    .bar input { margin-top: 0; flex: 1; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
+    .table-box { overflow: auto; }
+    table { width: 100%; min-width: 860px; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #e5eaf0; text-align: left; }
+    th { background: #f7f9fc; color: #52606d; }
+    td small { display: block; color: #758392; }
+    .editor { padding: 18px; }
+    .hidden { display: none !important; }
+    .msg { margin-bottom: 14px; padding: 10px 12px; border-radius: 6px; }
+    .error { color: #a61b1b; background: #fff1f0; }
+    .success { color: #1f7a3b; background: #edf9f0; }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .bar { flex-direction: column; } }
+  </style>
+</head>
+<body>
+<main class="page">
+  <section id="loginPanel" class="card login">
+    <h1>无人机信息管理</h1>
+    <form id="loginForm">
+      <label>用户名<input id="username" value="admin"></label>
+      <label>密码<input id="password" type="password" value="admin123"></label>
+      <button class="primary" style="width:100%" type="submit">登录</button>
+    </form>
+    <p id="loginMsg" class="msg error hidden"></p>
+  </section>
+
+  <section id="appPanel" class="hidden">
+    <header class="card topbar">
+      <div>
+        <h1>无人机信息管理</h1>
+        <span id="userLabel"></span>
+      </div>
+      <button id="logoutBtn">退出</button>
+    </header>
+
+    <section class="bar">
+      <input id="keyword" placeholder="搜索名称、型号、厂商、序列号">
+      <button id="searchBtn" class="primary">查询</button>
+      <button id="newBtn">新增</button>
+    </section>
+    <p id="msg" class="msg hidden"></p>
+
+    <section class="layout">
+      <div class="table-box">
+        <table>
+          <thead>
+          <tr><th>名称</th><th>型号</th><th>厂商</th><th>类型</th><th>续航</th><th>速度</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <aside id="editor" class="editor hidden">
+        <h2 id="editorTitle">新增无人机</h2>
+        <form id="form">
+          <label>名称<input id="name"></label>
+          <label>型号<input id="model"></label>
+          <label>厂商<input id="manufacturer"></label>
+          <label>序列号<input id="serialNumber"></label>
+          <label>类型<input id="droneType"></label>
+          <label>状态<select id="status"><option>待检</option><option>在役</option><option>维修</option><option>退役</option></select></label>
+          <label>续航<input id="flightMinutes" type="number"></label>
+          <label>速度<input id="speedKmh" type="number"></label>
+          <label>载重<input id="payloadKg" type="number" step="0.1"></label>
+          <label>说明<textarea id="description"></textarea></label>
+          <button class="primary" type="submit">保存</button>
+          <button id="cancelBtn" type="button">取消</button>
+        </form>
+      </aside>
+    </section>
+  </section>
+</main>
+
+<script>
+  const API = 'http://localhost:8092/api';
+  const TOKEN = 'simple-drone-token';
+  const state = { drones: [], mode: 'create', id: null };
+  const ids = ['loginPanel','appPanel','loginForm','username','password','loginMsg','userLabel','logoutBtn','keyword','searchBtn','newBtn','msg','rows','editor','editorTitle','form','name','model','manufacturer','serialNumber','droneType','status','flightMinutes','speedKmh','payloadKg','description','cancelBtn'];
+  const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+
+  el.loginForm.onsubmit = async e => {
+    e.preventDefault();
+    await run(async () => {
+      const res = await request('/auth/login', { method: 'POST', body: { username: el.username.value, password: el.password.value } });
+      localStorage.setItem(TOKEN, res.data.token);
+      showApp(res.data.username);
+      await loadDrones();
+    }, '登录成功', el.loginMsg);
+  };
+
+  el.logoutBtn.onclick = () => {
+    localStorage.removeItem(TOKEN);
+    el.appPanel.classList.add('hidden');
+    el.loginPanel.classList.remove('hidden');
+  };
+  el.searchBtn.onclick = loadDrones;
+  el.keyword.onkeyup = e => { if (e.key === 'Enter') loadDrones(); };
+  el.newBtn.onclick = () => openEditor();
+  el.cancelBtn.onclick = closeEditor;
+  el.form.onsubmit = saveDrone;
+
+  checkLogin();
+
+  async function checkLogin() {
+    try {
+      const res = await request('/auth/me');
+      if (res.data.authenticated) {
+        showApp(res.data.username);
+        await loadDrones();
+      }
+    } catch {}
+  }
+
+  function showApp(username) {
+    el.userLabel.textContent = username || 'admin';
+    el.loginPanel.classList.add('hidden');
+    el.appPanel.classList.remove('hidden');
+  }
+
+  async function loadDrones() {
+    await run(async () => {
+      const res = await request('/drones?keyword=' + encodeURIComponent(el.keyword.value.trim()));
+      state.drones = res.data || [];
+      render();
+    });
+  }
+
+  function render() {
+    if (!state.drones.length) {
+      el.rows.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#758392">暂无数据</td></tr>';
+      return;
+    }
+    el.rows.innerHTML = state.drones.map(d => `
+      <tr>
+        <td><strong>${esc(d.name)}</strong><small>${esc(d.serialNumber)}</small></td>
+        <td>${esc(d.model)}</td><td>${esc(d.manufacturer)}</td><td>${esc(d.droneType)}</td>
+        <td>${d.flightMinutes} 分钟</td><td>${d.speedKmh} km/h</td><td>${esc(d.status)}</td>
+        <td><button onclick="editDrone(${d.id})">改</button> <button class="danger" onclick="deleteDrone(${d.id})">删</button></td>
+      </tr>
+    `).join('');
+  }
+
+  window.editDrone = id => {
+    const drone = state.drones.find(d => d.id === id);
+    openEditor(drone);
+  };
+
+  window.deleteDrone = async id => {
+    const drone = state.drones.find(d => d.id === id);
+    if (!confirm('确认删除 ' + (drone ? drone.name : '该无人机') + '？')) return;
+    await run(async () => {
+      await request('/drones/' + id, { method: 'DELETE' });
+      await loadDrones();
+    }, '删除成功');
+  };
+
+  function openEditor(drone) {
+    state.mode = drone ? 'edit' : 'create';
+    state.id = drone ? drone.id : null;
+    el.editorTitle.textContent = drone ? '修改无人机' : '新增无人机';
+    fill(drone || { status: '待检' });
+    ['model','manufacturer','serialNumber','droneType','flightMinutes','speedKmh','payloadKg','description'].forEach(id => el[id].readOnly = !drone);
+    el.editor.classList.remove('hidden');
+  }
+
+  function closeEditor() { el.editor.classList.add('hidden'); }
+
+  async function saveDrone(e) {
+    e.preventDefault();
+    await run(async () => {
+      if (state.mode === 'create') {
+        await request('/drones', { method: 'POST', body: { name: el.name.value.trim(), status: el.status.value } });
+      } else {
+        await request('/drones/' + state.id, { method: 'PUT', body: read() });
+      }
+      closeEditor();
+      await loadDrones();
+    }, '保存成功');
+  }
+
+  function fill(data) {
+    ['name','model','manufacturer','serialNumber','droneType','status','flightMinutes','speedKmh','payloadKg','description'].forEach(id => el[id].value = data[id] || '');
+  }
+
+  function read() {
+    return {
+      name: el.name.value.trim(), model: el.model.value.trim(), manufacturer: el.manufacturer.value.trim(),
+      serialNumber: el.serialNumber.value.trim(), droneType: el.droneType.value.trim(), status: el.status.value,
+      flightMinutes: Number(el.flightMinutes.value), speedKmh: Number(el.speedKmh.value),
+      payloadKg: Number(el.payloadKg.value), description: el.description.value.trim()
+    };
+  }
+
+  async function request(path, options = {}) {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = localStorage.getItem(TOKEN);
+    if (token) headers['X-Auth-Token'] = token;
+    const response = await fetch(API + path, { method: options.method || 'GET', headers, body: options.body ? JSON.stringify(options.body) : undefined });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data.success === false) throw new Error(data && data.message ? data.message : '请求失败');
+    return data;
+  }
+
+  async function run(task, ok, target = el.msg) {
+    target.classList.add('hidden');
+    try {
+      await task();
+      if (ok) show(ok, 'success', target);
+    } catch (e) {
+      show(e.message, 'error', target);
+    }
+  }
+
+  function show(text, type, target) {
+    target.textContent = text;
+    target.className = 'msg ' + type;
+    target.classList.remove('hidden');
+  }
+
+  function esc(v) {
+    return String(v == null ? '' : v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  }
+</script>
+</body>
+</html>

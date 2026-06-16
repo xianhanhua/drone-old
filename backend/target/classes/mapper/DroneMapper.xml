@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.simpledrone.mapper.DroneMapper">
+    <resultMap id="DroneMap" type="com.example.simpledrone.domain.Drone">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="model" property="model"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="serial_number" property="serialNumber"/>
+        <result column="drone_type" property="droneType"/>
+        <result column="flight_minutes" property="flightMinutes"/>
+        <result column="speed_kmh" property="speedKmh"/>
+        <result column="payload_kg" property="payloadKg"/>
+        <result column="status" property="status"/>
+        <result column="description" property="description"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="selectList" resultMap="DroneMap">
+        SELECT id, name, model, manufacturer, serial_number, drone_type,
+               flight_minutes, speed_kmh, payload_kg, status, description, created_at
+        FROM drones
+        <where>
+            <if test="keyword != null and keyword != ''">
+                <bind name="keywordLike" value="'%' + keyword + '%'"/>
+                AND (
+                    name LIKE #{keywordLike}
+                    OR model LIKE #{keywordLike}
+                    OR manufacturer LIKE #{keywordLike}
+                    OR serial_number LIKE #{keywordLike}
+                )
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <select id="selectById" resultMap="DroneMap">
+        SELECT id, name, model, manufacturer, serial_number, drone_type,
+               flight_minutes, speed_kmh, payload_kg, status, description, created_at
+        FROM drones
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.example.simpledrone.domain.Drone"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO drones (
+            name, model, manufacturer, serial_number, drone_type,
+            flight_minutes, speed_kmh, payload_kg, status, description, created_at
+        ) VALUES (
+            #{name}, #{model}, #{manufacturer}, #{serialNumber}, #{droneType},
+            #{flightMinutes}, #{speedKmh}, #{payloadKg}, #{status}, #{description}, #{createdAt}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.example.simpledrone.domain.Drone">
+        UPDATE drones
+        SET name = #{name},
+            model = #{model},
+            manufacturer = #{manufacturer},
+            serial_number = #{serialNumber},
+            drone_type = #{droneType},
+            flight_minutes = #{flightMinutes},
+            speed_kmh = #{speedKmh},
+            payload_kg = #{payloadKg},
+            status = #{status},
+            description = #{description}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM drones WHERE id = #{id}
+    </delete>
+</mapper>
